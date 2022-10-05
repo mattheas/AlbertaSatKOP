@@ -103,11 +103,54 @@ Submission:
 /* BATTERY VECTOR */
 uint16_t EPS_BATT[EPS_SIZE];
 
-// YOUR CODE HERE!
+pthread_mutex_t EPS_BATT_MUTEX;
+
+
+
+void *Update_EPS(void* rank) {
+
+  // run every 30us?????????????
+  while (1) {
+    pthread_mutex_lock(&EPS_BATT_MUTEX);
+    EPS_BATT[0] = sc_get_current();
+    EPS_BATT[2] = sc_get_voltage();
+    EPS_BATT[4] = sc_get_temp();
+    pthread_mutex_unlock(&EPS_BATT_MUTEX);
+    printf("%u \n",EPS_BATT[0]);
+  }
+
+}
+
+void *Compare_EPS(void* rank) {
+}
+
+void *Check_EPS(void* rank) {
+}
+
 
 int main() {
   // initialize your threads and start the program
+  long       thread;  /* Use long in case of a 64-bit system */
+  pthread_t* thread_handles; 
   
+  thread_handles = malloc(3*sizeof(pthread_t)); 
+  /* Initialize Mutex */
+  pthread_mutex_init(&EPS_BATT_MUTEX, NULL);
+
+  /* Create threads */
+  pthread_create(&thread_handles[thread], NULL, Update_EPS, NULL);
+  pthread_create(&thread_handles[thread], NULL, Compare_EPS, NULL);
+  pthread_create(&thread_handles[thread], NULL, Check_EPS, NULL);
+
+  
+
+    /* Finalize threads */
+    for (thread = 0; thread < 3; thread++) 
+            pthread_join(thread_handles[thread], NULL); 
+    
+    
+    
+    free(thread_handles);
   return 0;
 }
 
