@@ -141,9 +141,11 @@ void *Compare_EPS(void* rank) {
 			
 		} else if( CURRENT_SAFE-DANGER_THRESHOLD <= EPS_BATT[EPS_CURRENT_VAL] && EPS_BATT[EPS_CURRENT_VAL] <= CURRENT_SAFE+DANGER_THRESHOLD  ) {
 			EPS_BATT[EPS_CURRENT_STATE] = WARNING;
+			printf("warning current\n");
 			
 		} else if( CURRENT_SAFE-DANGER_THRESHOLD > EPS_BATT[EPS_CURRENT_VAL] || EPS_BATT[EPS_CURRENT_VAL] > CURRENT_SAFE+DANGER_THRESHOLD  ) {
 			EPS_BATT[EPS_CURRENT_STATE] = DANGER;
+			printf("Danger current\n");
 		} 
 		
 		
@@ -154,9 +156,11 @@ void *Compare_EPS(void* rank) {
 			
 		} else if( VOLTAGE_SAFE-DANGER_THRESHOLD <= EPS_BATT[EPS_VOLTAGE_VAL] && EPS_BATT[EPS_VOLTAGE_VAL] <= VOLTAGE_SAFE+DANGER_THRESHOLD  ) {
 			EPS_BATT[EPS_VOLTAGE_STATE] = WARNING;
+			printf("warning voltage \n");
 			
 		} else if( VOLTAGE_SAFE-DANGER_THRESHOLD > EPS_BATT[EPS_VOLTAGE_VAL] || EPS_BATT[EPS_VOLTAGE_VAL] > VOLTAGE_SAFE+DANGER_THRESHOLD  ) {
 			EPS_BATT[EPS_VOLTAGE_STATE] = DANGER;
+			printf("Danger voltage \n");
 		} 
 		
 		
@@ -167,12 +171,14 @@ void *Compare_EPS(void* rank) {
 			
 		} else if( TEMPERATURE_SAFE-DANGER_THRESHOLD <= EPS_BATT[EPS_TEMPERATURE_VAL] && EPS_BATT[EPS_TEMPERATURE_VAL] <= TEMPERATURE_SAFE+DANGER_THRESHOLD  ) {
 			EPS_BATT[EPS_TEMPERATURE_STATE] = WARNING;
+			printf("warning temp \n");
 			
 		} else if( TEMPERATURE_SAFE-DANGER_THRESHOLD > EPS_BATT[EPS_TEMPERATURE_VAL] || EPS_BATT[EPS_TEMPERATURE_VAL] > TEMPERATURE_SAFE+DANGER_THRESHOLD  ) {
 			EPS_BATT[EPS_TEMPERATURE_STATE] = DANGER;
+			printf("Danger temp \n");
 		} 
 		
-		//printf("\n");
+		printf("\n \n");
 		pthread_mutex_unlock(&EPS_BATT_MUTEX);
 	}
 }
@@ -213,10 +219,25 @@ void *Check_EPS(void* rank) {
 			
 			// increment EPS_ALERT counter
 			EPS_BATT[EPS_ALERT] = EPS_BATT[EPS_ALERT] + 1;  
+			printf("EPS_ALERT incremented = %d \n", EPS_BATT[EPS_ALERT]);
 		}
 		
 		
 		// respond to EPS_ALERT ==5
+		if (EPS_BATT[EPS_ALERT] == 5) {
+			// simply sleep this thread for 10 seconds, other threads will have to wait on BATT_MUTEX anyway
+			printf("Sleeping for 10sec \n");
+			//for(int i = 0; i<100000; i++){}
+			sleep(10);
+			EPS_BATT[EPS_ALERT] = 0;
+			
+			// wait 10 seconds
+			// wakeup threads
+			// reset EPS_ALERT
+			// unlock BATT_MUTEX???? or else other thread functions will not 	
+		}
+		
+		
 		
 		
 		pthread_mutex_unlock(&EPS_BATT_MUTEX);
