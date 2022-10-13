@@ -1,19 +1,19 @@
-#PROGS = eps sc
+TARGET = main
 CC = gcc
 CFLAGS = -pthread -o
 
-#all: $(PROGS)
+objects = eps.o sc.o
 
-main: eps.o sc.o
-	$(CC) $(CFLAGS) main eps.o sc.o 
+.PHONY : clean
 
+$(TARGET): clean $(objects)
+	$(CC) $(CFLAGS) $(TARGET) $(objects)
 
-eps.o: eps.c eps.h sc.h
-	$(CC) -c -lpthread eps.c
+eps.o: ./eps/eps.c ./eps/eps.h ./sc/sc.h
+	$(CC) -I./eps -I./sc -c ./eps/eps.c
 	
-sc.o : sc.c sc.h
-	$(CC) -c sc.c
+sc.o : ./sc/sc.c ./sc/sc.h
+	$(CC) -c ./sc/sc.c
 
 
-#clean:
-	#rm $(PROGS) *.o main
+
