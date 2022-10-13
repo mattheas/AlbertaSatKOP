@@ -1,11 +1,19 @@
-PROGS = eps sc
+#PROGS = eps sc
 CC = gcc
-CFLAGS = -std=gnu99
+CFLAGS = -pthread -o
 
-all: $(PROGS)
+#all: $(PROGS)
 
-main: eps.c sc.c
-	$(CC) $(CFLAGS) -o main eps.c sc.c
+main: eps.o sc.o
+	$(CC) $(CFLAGS) main eps.o sc.o 
 
-clean:
-	rm $(PROGS) *.o main
+
+eps.o: eps.c eps.h sc.h
+	$(CC) -c -lpthread eps.c
+	
+sc.o : sc.c sc.h
+	$(CC) -c sc.c
+
+
+#clean:
+	#rm $(PROGS) *.o main
