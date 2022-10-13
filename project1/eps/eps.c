@@ -87,6 +87,7 @@ Submission:
 #include "../sc/sc.h"
 #include "eps.h"
 
+
 /* VALUES AND TOLERANCES */
 #define VOLTAGE_SAFE          15
 #define CURRENT_SAFE          45
@@ -106,52 +107,169 @@ uint16_t EPS_BATT[EPS_SIZE];
 pthread_mutex_t EPS_BATT_MUTEX;
 
 
-
 void *Update_EPS(void* rank) {
 
-  // run every 30us?????????????
-  while (1) {
-    pthread_mutex_lock(&EPS_BATT_MUTEX);
-    EPS_BATT[0] = sc_get_current();
-    EPS_BATT[2] = sc_get_voltage();
-    EPS_BATT[4] = sc_get_temp();
-    pthread_mutex_unlock(&EPS_BATT_MUTEX);
-    printf("%u \n",EPS_BATT[0]);
-  }
-
+	while (1) {
+		sleep(0.03); // sleep for 30us
+		pthread_mutex_lock(&EPS_BATT_MUTEX);
+		
+		EPS_BATT[EPS_CURRENT_VAL] = sc_get_current();
+		EPS_BATT[EPS_VOLTAGE_VAL] = sc_get_voltage();
+		EPS_BATT[EPS_TEMPERATURE_VAL] = sc_get_temp();
+		
+		pthread_mutex_unlock(&EPS_BATT_MUTEX);
+		//printf("%u \n",EPS_BATT[0]);
+	}
+  
 }
 
 void *Compare_EPS(void* rank) {
+
+	while (1) {
+	
+		sleep(3); // sleep for 3 seconds
+		pthread_mutex_lock(&EPS_BATT_MUTEX);
+		/*
+		printf("current : %d \n", EPS_BATT[EPS_CURRENT_VAL]);
+		printf("voltage : %d \n", EPS_BATT[EPS_VOLTAGE_VAL]);
+		printf("temp : %d \n", EPS_BATT[EPS_TEMPERATURE_VAL]);
+		*/
+		// update CURRENT state 
+		if ( CURRENT_SAFE-WARNING_THRESHOLD <= EPS_BATT[EPS_CURRENT_VAL] && EPS_BATT[EPS_CURRENT_VAL] <= CURRENT_SAFE+WARNING_THRESHOLD ) { 
+			EPS_BATT[EPS_CURRENT_STATE] = NOMINAL;
+			printf("nominal current\n");
+			
+		} else if( CURRENT_SAFE-DANGER_THRESHOLD <= EPS_BATT[EPS_CURRENT_VAL] && EPS_BATT[EPS_CURRENT_VAL] <= CURRENT_SAFE+DANGER_THRESHOLD  ) {
+			EPS_BATT[EPS_CURRENT_STATE] = WARNING;
+			printf("warning current\n");
+			
+		} else if( CURRENT_SAFE-DANGER_THRESHOLD > EPS_BATT[EPS_CURRENT_VAL] || EPS_BATT[EPS_CURRENT_VAL] > CURRENT_SAFE+DANGER_THRESHOLD  ) {
+			EPS_BATT[EPS_CURRENT_STATE] = DANGER;
+			printf("Danger current\n");
+		} 
+		
+		
+		// update VOLTAGE state 
+		if ( VOLTAGE_SAFE-WARNING_THRESHOLD <= EPS_BATT[EPS_VOLTAGE_VAL] && EPS_BATT[EPS_VOLTAGE_VAL] <= VOLTAGE_SAFE+WARNING_THRESHOLD ) { 
+			EPS_BATT[EPS_VOLTAGE_STATE] = NOMINAL;
+			printf("nominal voltage \n");
+			
+		} else if( VOLTAGE_SAFE-DANGER_THRESHOLD <= EPS_BATT[EPS_VOLTAGE_VAL] && EPS_BATT[EPS_VOLTAGE_VAL] <= VOLTAGE_SAFE+DANGER_THRESHOLD  ) {
+			EPS_BATT[EPS_VOLTAGE_STATE] = WARNING;
+			printf("warning voltage \n");
+			
+		} else if( VOLTAGE_SAFE-DANGER_THRESHOLD > EPS_BATT[EPS_VOLTAGE_VAL] || EPS_BATT[EPS_VOLTAGE_VAL] > VOLTAGE_SAFE+DANGER_THRESHOLD  ) {
+			EPS_BATT[EPS_VOLTAGE_STATE] = DANGER;
+			printf("Danger voltage \n");
+		} 
+		
+		
+		// update TEMPERATURE state 
+		if ( TEMPERATURE_SAFE-WARNING_THRESHOLD <= EPS_BATT[EPS_TEMPERATURE_VAL] && EPS_BATT[EPS_TEMPERATURE_VAL] <= TEMPERATURE_SAFE+WARNING_THRESHOLD ) { 
+			EPS_BATT[EPS_TEMPERATURE_STATE] = NOMINAL;
+			printf("nominal temp \n");
+			
+		} else if( TEMPERATURE_SAFE-DANGER_THRESHOLD <= EPS_BATT[EPS_TEMPERATURE_VAL] && EPS_BATT[EPS_TEMPERATURE_VAL] <= TEMPERATURE_SAFE+DANGER_THRESHOLD  ) {
+			EPS_BATT[EPS_TEMPERATURE_STATE] = WARNING;
+			printf("warning temp \n");
+			
+		} else if( TEMPERATURE_SAFE-DANGER_THRESHOLD > EPS_BATT[EPS_TEMPERATURE_VAL] || EPS_BATT[EPS_TEMPERATURE_VAL] > TEMPERATURE_SAFE+DANGER_THRESHOLD  ) {
+			EPS_BATT[EPS_TEMPERATURE_STATE] = DANGER;
+			printf("Danger temp \n");
+		} 
+		
+		printf("\n \n");
+		pthread_mutex_unlock(&EPS_BATT_MUTEX);
+	}
 }
 
+
 void *Check_EPS(void* rank) {
+
+	while (1) {
+		sleep(3); // sleep for 3 seconds
+		pthread_mutex_lock(&EPS_BATT_MUTEX);
+		
+		int nominal_state_count = 0;
+		int warning_state_count = 0;
+		int danger_state_count = 0;
+		int op_value_index = 0;
+		
+		for (int i=0; i<3; i++) {
+			if (i==0) { op_value_index = EPS_CURRENT_STATE; }
+			if (i==1) { op_value_index = EPS_VOLTAGE_STATE; }
+			if (i==2) { op_value_index = EPS_TEMPERATURE_STATE; }
+			
+			if (EPS_BATT[op_value_index] == NOMINAL) {
+				nominal_state_count++;
+			} else if (EPS_BATT[op_value_index] == WARNING) {
+				warning_state_count++;
+			} else if (EPS_BATT[op_value_index] == DANGER){
+				danger_state_count++;
+			}
+		}
+		
+		// now we have all the number of state counts so start reporting bad states
+		
+		if (warning_state_count >= 2 && danger_state_count == 0) {
+			// report bad state, to terminal
+			
+		} else if ((3-nominal_state_count) >= 2 && danger_state_count >= 1) {
+			// report bad states to terminal 
+			
+			// increment EPS_ALERT counter
+			EPS_BATT[EPS_ALERT] = EPS_BATT[EPS_ALERT] + 1;  
+			printf("EPS_ALERT incremented = %d \n", EPS_BATT[EPS_ALERT]);
+		}
+		
+		
+		// respond to EPS_ALERT ==5
+		if (EPS_BATT[EPS_ALERT] == 5) {
+			// simply sleep this thread for 10 seconds, other threads will have to wait on BATT_MUTEX anyway
+			printf("Sleeping for 10sec \n");
+			//for(int i = 0; i<100000; i++){}
+			sleep(10);
+			EPS_BATT[EPS_ALERT] = 0;
+			
+			// wait 10 seconds
+			// wakeup threads
+			// reset EPS_ALERT
+			// unlock BATT_MUTEX???? or else other thread functions will not 	
+		}
+		
+		
+		
+		
+		pthread_mutex_unlock(&EPS_BATT_MUTEX);
+		
+	}
 }
 
 
 int main() {
-  // initialize your threads and start the program
-  long       thread;  /* Use long in case of a 64-bit system */
-  pthread_t* thread_handles; 
-  
-  thread_handles = malloc(3*sizeof(pthread_t)); 
-  /* Initialize Mutex */
-  pthread_mutex_init(&EPS_BATT_MUTEX, NULL);
 
-  /* Create threads */
-  pthread_create(&thread_handles[thread], NULL, Update_EPS, NULL);
-  pthread_create(&thread_handles[thread], NULL, Compare_EPS, NULL);
-  pthread_create(&thread_handles[thread], NULL, Check_EPS, NULL);
+	// initialize your threads and start the program
+	long       thread;  /* Use long in case of a 64-bit system */
+	pthread_t* thread_handles; 
 
-  
+	thread_handles = malloc(3*sizeof(pthread_t)); 
 
-    /* Finalize threads */
-    for (thread = 0; thread < 3; thread++) 
-            pthread_join(thread_handles[thread], NULL); 
+	/* Initialize Mutex */
+	pthread_mutex_init(&EPS_BATT_MUTEX, NULL);
+
+	/* Create threads */
+	pthread_create(&thread_handles[0], NULL, Update_EPS, NULL);
+	pthread_create(&thread_handles[1], NULL, Compare_EPS, NULL);
+	pthread_create(&thread_handles[2], NULL, Check_EPS, NULL);
+
+	/* Finalize threads */
+	for (thread = 0; thread < 3; thread++) {
+		pthread_join(thread_handles[thread], NULL); 
+	}
     
     
-    
-    free(thread_handles);
-  return 0;
-}
+	free(thread_handles);
+	return 0;
+}// end of int main()
 
 
