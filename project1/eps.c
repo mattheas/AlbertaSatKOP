@@ -125,7 +125,7 @@ void *Update_EPS(void* rank) {
 
 void *Compare_EPS(void* rank) {
 
-	while(1) {
+	while (1) {
 	
 		sleep(3); // sleep for 3 seconds
 		pthread_mutex_lock(&EPS_BATT_MUTEX);
@@ -135,7 +135,7 @@ void *Compare_EPS(void* rank) {
 		printf("temp : %d \n", EPS_BATT[EPS_TEMPERATURE_VAL]);
 		*/
 		// update CURRENT state 
-		if( CURRENT_SAFE-WARNING_THRESHOLD <= EPS_BATT[EPS_CURRENT_VAL] && EPS_BATT[EPS_CURRENT_VAL] <= CURRENT_SAFE+WARNING_THRESHOLD ) { 
+		if ( CURRENT_SAFE-WARNING_THRESHOLD <= EPS_BATT[EPS_CURRENT_VAL] && EPS_BATT[EPS_CURRENT_VAL] <= CURRENT_SAFE+WARNING_THRESHOLD ) { 
 			EPS_BATT[EPS_CURRENT_STATE] = NOMINAL;
 			printf("nominal current\n");
 			
@@ -148,7 +148,7 @@ void *Compare_EPS(void* rank) {
 		
 		
 		// update VOLTAGE state 
-		if( VOLTAGE_SAFE-WARNING_THRESHOLD <= EPS_BATT[EPS_VOLTAGE_VAL] && EPS_BATT[EPS_VOLTAGE_VAL] <= VOLTAGE_SAFE+WARNING_THRESHOLD ) { 
+		if ( VOLTAGE_SAFE-WARNING_THRESHOLD <= EPS_BATT[EPS_VOLTAGE_VAL] && EPS_BATT[EPS_VOLTAGE_VAL] <= VOLTAGE_SAFE+WARNING_THRESHOLD ) { 
 			EPS_BATT[EPS_VOLTAGE_STATE] = NOMINAL;
 			printf("nominal voltage \n");
 			
@@ -161,7 +161,7 @@ void *Compare_EPS(void* rank) {
 		
 		
 		// update TEMPERATURE state 
-		if( TEMPERATURE_SAFE-WARNING_THRESHOLD <= EPS_BATT[EPS_TEMPERATURE_VAL] && EPS_BATT[EPS_TEMPERATURE_VAL] <= TEMPERATURE_SAFE+WARNING_THRESHOLD ) { 
+		if ( TEMPERATURE_SAFE-WARNING_THRESHOLD <= EPS_BATT[EPS_TEMPERATURE_VAL] && EPS_BATT[EPS_TEMPERATURE_VAL] <= TEMPERATURE_SAFE+WARNING_THRESHOLD ) { 
 			EPS_BATT[EPS_TEMPERATURE_STATE] = NOMINAL;
 			printf("nominal temp \n");
 			
@@ -180,8 +180,47 @@ void *Compare_EPS(void* rank) {
 
 void *Check_EPS(void* rank) {
 
-	while(1) {
+	while (1) {
 		sleep(3); // sleep for 3 seconds
+		pthread_mutex_lock(&EPS_BATT_MUTEX);
+		
+		int nominal_state_count = 0;
+		int warning_state_count = 0;
+		int danger_state_count = 0;
+		int op_value_index = 0;
+		
+		for (int i=0; i<3; i++) {
+			if (i==0) { op_value_index = EPS_CURRENT_STATE; }
+			if (i==1) { op_value_index = EPS_VOLTAGE_STATE; }
+			if (i==2) { op_value_index = EPS_TEMPERATURE_STATE; }
+			
+			if (EPS_BATT[op_value_index] == NOMINAL) {
+				nominal_state_count++;
+			} else if (EPS_BATT[op_value_index] == WARNING) {
+				warning_state_count++;
+			} else if (EPS_BATT[op_value_index] == DANGER){
+				danger_state_count++;
+			}
+		}
+		
+		// now we have all the number of state counts so start reporting bad states
+		
+		if (warning_state_count >= 2 && danger_state_count == 0) {
+			// report bad state, to terminal
+			
+		} else if ((3-nominal_state_count) >= 2 && danger_state_count >= 1) {
+			// report bad states to terminal 
+			
+			// increment EPS_ALERT counter
+			EPS_BATT[EPS_ALERT] = EPS_BATT[EPS_ALERT] + 1;  
+		}
+		
+		
+		// respond to EPS_ALERT ==5
+		
+		
+		pthread_mutex_unlock(&EPS_BATT_MUTEX);
+		
 	}
 }
 
