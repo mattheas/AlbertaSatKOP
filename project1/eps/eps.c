@@ -138,45 +138,36 @@ void *Compare_EPS(void* rank) {
 		// update CURRENT state 
 		if ( CURRENT_SAFE-WARNING_THRESHOLD <= EPS_BATT[EPS_CURRENT_VAL] && EPS_BATT[EPS_CURRENT_VAL] <= CURRENT_SAFE+WARNING_THRESHOLD ) { 
 			EPS_BATT[EPS_CURRENT_STATE] = NOMINAL;
-			//printf("Nominal current\n");
 			
 		} else if( CURRENT_SAFE-DANGER_THRESHOLD <= EPS_BATT[EPS_CURRENT_VAL] && EPS_BATT[EPS_CURRENT_VAL] <= CURRENT_SAFE+DANGER_THRESHOLD  ) {
 			EPS_BATT[EPS_CURRENT_STATE] = WARNING;
-			//printf("Warning current\n");
 			
 		} else if( CURRENT_SAFE-DANGER_THRESHOLD > EPS_BATT[EPS_CURRENT_VAL] || EPS_BATT[EPS_CURRENT_VAL] > CURRENT_SAFE+DANGER_THRESHOLD  ) {
 			EPS_BATT[EPS_CURRENT_STATE] = DANGER;
-			//printf("Danger current\n");
 		} 
 		
 		
 		// update VOLTAGE state 
 		if ( VOLTAGE_SAFE-WARNING_THRESHOLD <= EPS_BATT[EPS_VOLTAGE_VAL] && EPS_BATT[EPS_VOLTAGE_VAL] <= VOLTAGE_SAFE+WARNING_THRESHOLD ) { 
 			EPS_BATT[EPS_VOLTAGE_STATE] = NOMINAL;
-			//printf("Nominal voltage \n");
 			
 		} else if( VOLTAGE_SAFE-DANGER_THRESHOLD <= EPS_BATT[EPS_VOLTAGE_VAL] && EPS_BATT[EPS_VOLTAGE_VAL] <= VOLTAGE_SAFE+DANGER_THRESHOLD  ) {
 			EPS_BATT[EPS_VOLTAGE_STATE] = WARNING;
-			//printf("Warning voltage \n");
 			
 		} else if( VOLTAGE_SAFE-DANGER_THRESHOLD > EPS_BATT[EPS_VOLTAGE_VAL] || EPS_BATT[EPS_VOLTAGE_VAL] > VOLTAGE_SAFE+DANGER_THRESHOLD  ) {
 			EPS_BATT[EPS_VOLTAGE_STATE] = DANGER;
-			//printf("Danger voltage \n");
 		} 
 		
 		
 		// update TEMPERATURE state 
 		if ( TEMPERATURE_SAFE-WARNING_THRESHOLD <= EPS_BATT[EPS_TEMPERATURE_VAL] && EPS_BATT[EPS_TEMPERATURE_VAL] <= TEMPERATURE_SAFE+WARNING_THRESHOLD ) { 
 			EPS_BATT[EPS_TEMPERATURE_STATE] = NOMINAL;
-			//printf("Nominal temp \n");
 			
 		} else if( TEMPERATURE_SAFE-DANGER_THRESHOLD <= EPS_BATT[EPS_TEMPERATURE_VAL] && EPS_BATT[EPS_TEMPERATURE_VAL] <= TEMPERATURE_SAFE+DANGER_THRESHOLD  ) {
 			EPS_BATT[EPS_TEMPERATURE_STATE] = WARNING;
-			//printf("Warning temp \n");
 			
 		} else if( TEMPERATURE_SAFE-DANGER_THRESHOLD > EPS_BATT[EPS_TEMPERATURE_VAL] || EPS_BATT[EPS_TEMPERATURE_VAL] > TEMPERATURE_SAFE+DANGER_THRESHOLD  ) {
 			EPS_BATT[EPS_TEMPERATURE_STATE] = DANGER;
-			//printf("Danger temp \n");
 		} 
 		
 		//printf("\n \n");
@@ -217,42 +208,31 @@ void *Check_EPS(void* rank) {
 			}
 		}
 		
-		// now we have all the number of state counts so start reporting bad states
-		
+
+		// handle non-normal states		
 		if (warning_state_count >= 2 && danger_state_count == 0) {
 			
-			// report bad states, to terminal
+			// report bad states to terminal
 			for (int i=0; i<3; i++) {
 	
 				switch(i)
 				{
 					case 0:
-						if (warning_state_flag[i]==1) {
-							printf("current is in warning state\n");
-						} else if (danger_state_flag[i]==1) {
-							printf("current is in danger state\n");
-						}
+						if (warning_state_flag[i]==1) { printf("current is in warning state\n"); }
 						break;
 					case 1:
-						if (warning_state_flag[i]==1) {
-							printf("voltage is in warning state\n");
-						} else if (danger_state_flag[i]==1) {
-							printf("voltage is in danger state\n");
-						}
+						if (warning_state_flag[i]==1) { printf("voltage is in warning state\n"); }
 						break;
 					case 2:
-						if (warning_state_flag[i]==1) {
-							printf("temperature is in warning state\n");
-						} else if (danger_state_flag[i]==1) {
-							printf("temperature is in danger state\n");
-						}
+						if (warning_state_flag[i]==1) { printf("temperature is in warning state\n"); }
 						break;
-				} // end of switch case
+				}
 			}
 			
 			
 		} else if ((3-nominal_state_count) >= 2 && danger_state_count >= 1) {
-			// report bad states, to terminal
+		
+			// report bad states to terminal
 			for (int i=0; i<3; i++) {
 	
 				switch(i)
@@ -278,7 +258,7 @@ void *Check_EPS(void* rank) {
 							printf("temperature is in danger state\n");
 						}
 						break;
-				} // end of switch case
+				}
 			}
 			
 			// increment EPS_ALERT counter
@@ -286,23 +266,18 @@ void *Check_EPS(void* rank) {
 			printf("EPS_ALERT incremented, now = %d \n", EPS_BATT[EPS_ALERT]);
 		}
 		
+		printf("\n");
 		
-		// respond to EPS_ALERT ==5
+		// respond to EPS_ALERT reaching threshold
 		if (EPS_BATT[EPS_ALERT] == 5) {
-			// simply sleep this thread for 10 seconds, other threads will have to wait on BATT_MUTEX anyway
+		
+			// other threads implicitly block waiting on BATT_MUTEX 
 			printf("Sleeping for 10sec \n");
-			//for(int i = 0; i<100000; i++){}
 			sleep(10);
 			EPS_BATT[EPS_ALERT] = 0;
-			
-			// wait 10 seconds
-			// wakeup threads
-			// reset EPS_ALERT
-			// unlock BATT_MUTEX???? or else other thread functions will not 	
 		}
 		
 		pthread_mutex_unlock(&EPS_BATT_MUTEX);
-		
 	}
 }
 
