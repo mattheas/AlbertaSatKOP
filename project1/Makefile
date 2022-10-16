@@ -15,5 +15,5 @@ eps.o: ./eps/eps.c ./eps/eps.h ./sc/sc.h
 sc.o : ./sc/sc.c ./sc/sc.h
 	$(CC) -c ./sc/sc.c
 
-
-
+clean : 
+	rm -rf *.o $(TARGET)
