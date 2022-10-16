@@ -1,3 +1,33 @@
-Your instructions are in the following file:
-	/eps/eps.c
-Please reference that file for the full instructions.
+Name: Mattheas Jamieson
+ID: 1601689
+Fall 2022
+
+AlbertaSatKOP: Software EPS simulation
+
+Included Files :
+* eps.c
+* eps.h
+* sc.c
+* sc.h
+* Makefile
+* README
+
+Makefile Targets for client:
+* "make" : links all objects files and creates an executable
+* "eps.o" : compiles eps.c
+* "sc.o" : compiles sc.c
+* "clean" : removes the object and executable
+
+Running Instructions Combined:
+In main directory that contains the Makefile, README and two sub-directories eps & sc type "make" into the 
+terminal to create object files and main executable. After that type "./main" to run executable.
+
+Notes and Assumptions:
+Code was implemented to the best of my ability and to the best of my understanding
+from the requirements given. For example for given requirement "d>" to handle non-normal states, the 
+requirement states that under certain conditions the program must "cancel all threads execution for 10 seconds 
+before beginning them again.". I achieved this by using the sleep() function, knowing that the thread function
+was in possesion of a mutex required by both other threads. SO by using the sleep() function this blocked the
+other two threads. I believe a similar effect could be achieved with condition variables but I felt that was
+not necessary for this case, however I am not sure because the requirements are not clear if simply blocking
+the threads is sufficient. 
